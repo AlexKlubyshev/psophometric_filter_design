@@ -1,0 +1,76 @@
+gitignore
+# Данные и модели (обычно большие и не версионные)
+data/
+models/
+*.pth
+*.h5
+*.joblib
+*.pkl
+*.pickle
+
+# Среда Python и зависимости
+env/
+venv/
+.env
+*.env
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Операционные системы
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Логи и временные файлы
+logs/
+*.log
+temp/
+tmp/
+
+# Конфиденциальная информация
+*.key
+*.pem
+*.cert
+*.secret
+config.local.*
+
+# Пакеты и дистрибутивы
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# Прочее
+.coverage
+.tox/
+nosetests.xml
+pytest.xml
+*.cover
+.hypothesis/
+.pytest_cache/

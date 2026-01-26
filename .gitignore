@@ -1,0 +1,14 @@
+.DS_Store
+Thumbs.db
+__pycache__/
+*.py[cod]
+*.log
+*.tmp
+.ipynb_checkpoints/
+.vscode/
+.idea/
+*.swp
+*.swo
+catboost_info/
+draft_copy/
+strt.txt

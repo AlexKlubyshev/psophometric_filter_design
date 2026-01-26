@@ -1,0 +1,24 @@
+# Основные
+python==3.11.0
+
+# Данные
+pandas==2.1.4
+numpy==1.26.0
+openpyxl==3.1.2  # для Excel
+
+# Визуализация
+matplotlib==3.8.0
+seaborn==0.13.0
+
+# Машинное обучение
+scikit-learn==1.3.2
+imbalanced-learn==0.12.0
+category-encoders==2.6.3
+
+# Ноутбуки
+jupyter==1.0.0
+ipykernel==6.27.1
+
+# Утилиты
+tqdm==4.66.1
+python-dotenv==1.0.0
