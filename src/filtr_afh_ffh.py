@@ -1,8 +1,12 @@
 import numpy as np
+import pandas as pd
 from scipy import interpolate
 from scipy import signal
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+
+import warnings
+warnings.filterwarnings('ignore')
 
 ###################################################################################################################
 class BS468ReferenceResponse:
@@ -418,7 +422,7 @@ def plot_bs468_response_with_tables():
         table_data_ach.append([f"{f:.1f}", f"{mag:.2f}"])
     
     # Заголовок таблицы
-    table_title1 = "Таблица значений АЧХ BS.468-4\n(относительно 2200 Гц)"
+    table_title1 = "Таблица значений АЧХ BS.468-4\n(относительно 1000 Гц)"
     
     # Создаем таблицу
     table1 = ax_table1.table(cellText=table_data_ach,
@@ -545,9 +549,10 @@ def plot_bs468_response_with_tables():
     plt.tight_layout(rect=[0, 0.05, 1, 0.96])
     
     # Сохраняем и показываем
-    plt.savefig('bs468_response_with_tables.png', dpi=150, bbox_inches='tight')
-    plt.show()
+    #plt.savefig('bs468_response_with_tables.png', dpi=150, bbox_inches='tight')
+    #plt.show()
     
+    """
     # Дополнительно: выводим значения в консоль
     print("\n" + "="*80)
     print("ТАБЛИЧНЫЕ ЗНАЧЕНИЯ ХАРАКТЕРИСТИК BS.468-4")
@@ -574,7 +579,8 @@ def plot_bs468_response_with_tables():
         print(f"{f:<15.1f} {mag:<15.2f} {phase:<15.1f} {delay:<15.3f}")
     
     print("="*80)
-    
+    """
+
     return bs468
 
 ###################################################################################################################
@@ -907,3 +913,186 @@ def export_for_filter_design(num_points=512, filename="bs468_response.csv"):
               f"{data[i,3]:.2f}, {data[i,4]:.4f}, {data[i,5]:.6f}, {data[i,6]:.6f}")
     
     return bs468, freqs, mag_db, phase_deg, complex_response
+
+##############################################################################################################
+def plot_fir_response_with_tolerance(
+    coefficients,           # Коэффициенты КИХ-фильтра
+    reference_freqs,       # Частоты эталонной АЧХ [Гц]
+    reference_attenuation, # Ослабление эталонной АЧХ [дБ]
+    tolerance_deviations,  # Допуски отклонений [дБ]
+    sampling_freq,         # Частота дискретизации [Гц]
+    title="АЧХ КИХ-фильтра с эталоном и допусками"
+):
+    """
+    Визуализация АЧХ КИХ-фильтра с эталонной характеристикой и допусками
+    
+    Parameters:
+    -----------
+    coefficients : array-like
+        Коэффициенты КИХ-фильтра
+    reference_freqs : array-like
+        Частоты эталонной АЧХ в Гц
+    reference_attenuation : array-like
+        Ослабление эталонной АЧХ в дБ на соответствующих частотах
+    tolerance_deviations : array-like
+        Допуски отклонений в дБ на соответствующих частотах
+    sampling_freq : float
+        Частота дискретизации в Гц
+    title : str
+        Заголовок графика
+    """
+    
+    # Вычисляем АЧХ КИХ-фильтра
+    n_fft = 8192  # Количество точек для расчета АЧХ
+    w, h = signal.freqz(coefficients, worN=n_fft, fs=sampling_freq)
+    
+    # Переводим в дБ
+    magnitude_db = 20 * np.log10(np.abs(h) + 1e-10)  # +1e-10 чтобы избежать log(0)
+    
+    # Интерполяция значений АЧХ фильтра на эталонных частотах
+    filter_at_ref_freqs = np.interp(reference_freqs, w, magnitude_db)
+    
+    # Рассчитываем отклонения
+    deviations = filter_at_ref_freqs - reference_attenuation
+    
+    # Проверяем соответствие допускам
+    within_tolerance = np.abs(deviations) <= tolerance_deviations
+           
+    # Создаем график
+    fig = plt.figure(figsize=(16, 10))
+    gs = gridspec.GridSpec(1, 2, width_ratios=[2, 1], wspace=0.1)
+    
+    # Основной график
+    ax1 = fig.add_subplot(gs[0])
+    
+    # График АЧХ фильтра
+    ax1.semilogx(w, magnitude_db, 
+                linewidth=2.5, 
+                color='blue', 
+                alpha=0.8, 
+                label='АЧХ КИХ-фильтра')
+    
+    # График эталонной АЧХ
+    ax1.semilogx(reference_freqs, reference_attenuation, 
+                'ro-', 
+                markersize=8, 
+                linewidth=2,
+                label='Эталонная АЧХ')
+    
+    # Кривая допусков (верхняя граница)
+    upper_tolerance = reference_attenuation + tolerance_deviations
+    ax1.semilogx(reference_freqs, upper_tolerance, 
+                'g--', 
+                linewidth=1.5, 
+                alpha=0.7,
+                label='Верхний допуск')
+    
+    # Кривая допусков (нижняя граница)
+    lower_tolerance = reference_attenuation - tolerance_deviations
+    ax1.semilogx(reference_freqs, lower_tolerance, 
+                'g--', 
+                linewidth=1.5, 
+                alpha=0.7,
+                label='Нижний допуск')
+    
+    # Заливка области допуска
+    ax1.fill_between(reference_freqs, lower_tolerance, upper_tolerance, 
+                     alpha=0.15, color='green', label='Область допуска')
+    
+    # Подсветка точек вне допуска
+    if not all(within_tolerance):
+        outlier_freqs = reference_freqs[~within_tolerance]
+        outlier_vals = filter_at_ref_freqs[~within_tolerance]
+        ax1.semilogx(outlier_freqs, outlier_vals, 
+                    'rx', 
+                    markersize=12, 
+                    markeredgewidth=2,
+                    label='Вне допуска')
+    
+    # Настройка графика
+    ax1.set_xlabel('Частота, Гц', fontsize=12, fontweight='bold')
+    ax1.set_ylabel('Ослабление, дБ', fontsize=12, fontweight='bold')
+    ax1.set_title(title, fontsize=14, fontweight='bold', pad=20)
+    ax1.grid(True, which='both', alpha=0.3, linestyle='--')
+    ax1.grid(True, which='major', alpha=0.5)
+    ax1.legend(loc='best', fontsize=10, framealpha=0.9)
+    ax1.set_xlim([reference_freqs[0]/1.5, reference_freqs[-1]*1.5])
+    
+    # Добавляем информацию о фильтре
+    filter_info = f'Порядок фильтра: {len(coefficients)-1}\n'
+    filter_info += f'Fs = {sampling_freq/1000:.1f} кГц\n'
+    filter_info += f'Соответствие: {np.sum(within_tolerance)}/{len(within_tolerance)} точек'
+    
+    ax1.text(0.02, 0.98, filter_info,
+             transform=ax1.transAxes,
+             verticalalignment='top',
+             bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8),
+             fontsize=10)
+    
+    
+    table_data = np.column_stack((reference_freqs, reference_attenuation, tolerance_deviations))
+    columns = ('Частота, Гц', 'Ослабление, дБ', 'Допуск, дБ')
+
+    # Отключаем оси для таблицы
+    #axes[1].axis('off')
+    #axes[1].text(0, 0, "report", fontsize=10, family='monospace')
+    #axes[1].set_title('Характеристики фильтра')
+    ax2 = fig.add_subplot(gs[1])
+    ax2.axis('tight')
+    ax2.axis('off')
+
+    # Форматируем таблицу как текст
+    table_text = "ХАРАКТЕРИСТИКИ ФИЛЬТРА\n"
+    table_text += "=" * 70 + "\n"
+    table_text += "Частота,     Эталон,          Фильтр,      Отклонение,         Допуск,\n"
+    table_text += "  Гц           дБ               дБ             дБ                дБ\n"
+    table_text += "-" * 70 + "\n"
+
+    for i in range(len(reference_freqs)):
+        table_text += f"{reference_freqs[i]:<12} {reference_attenuation[i]:<16.1f} {filter_at_ref_freqs[i]:<16.1f} {deviations[i]:<16.1f} {tolerance_deviations[i]:<12}\n"
+
+    # подпись
+    #table_text += "\n" + "=" * 40 + "\n"
+    #table_text += "МСЭ-Т Рекомендация P.53"
+
+    # Выводим текст
+    ax2.text(0.0, 0.95, table_text, 
+                 fontsize=11, 
+                 family='monospace',
+                 verticalalignment='top',
+                 horizontalalignment='left',
+                transform=ax2.transAxes)
+    
+
+    # Статистика
+    stats_text = f"Среднее отклонение: {np.mean(np.abs(deviations)):.3f} дБ\n"
+    stats_text += f"Макс. отклонение: {np.max(np.abs(deviations)):.3f} дБ\n"
+    stats_text += f"Станд. отклонение: {np.std(deviations):.3f} дБ"
+    
+    ax2.text(0.05, 0.02, stats_text,
+             transform=ax2.transAxes,
+             verticalalignment='bottom',
+             bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.8),
+             fontsize=10)
+    
+    plt.tight_layout()
+    plt.show()
+    
+    # Дополнительная информация
+    print("=" * 80)
+    print("СТАТИСТИКА СООТВЕТСТВИЯ:")
+    print("=" * 80)
+    print(f"Всего проверяемых частот: {len(reference_freqs)}")
+    print(f"Соответствует допускам: {np.sum(within_tolerance)}")
+    print(f"Не соответствует допускам: {np.sum(~within_tolerance)}")
+    print(f"Процент соответствия: {100*np.mean(within_tolerance):.1f}%")
+    print("\nДЕТАЛИ ПО ЧАСТОТАМ:")
+    for i, freq in enumerate(reference_freqs):
+        status = "✓" if within_tolerance[i] else "✗"
+        color = "\033[92m" if within_tolerance[i] else "\033[91m"
+        reset = "\033[0m"
+        print(f"{color}{status}{reset} {freq:8.1f} Гц: "
+              f"отклонение {deviations[i]:+6.3f} дБ "
+              f"(допуск ±{tolerance_deviations[i]:.2f} дБ)")
+    
+    return deviations

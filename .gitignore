@@ -11,4 +11,5 @@ __pycache__/
 *.swo
 catboost_info/
 draft_copy/
+data/
 strt.txt
