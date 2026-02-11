@@ -845,29 +845,29 @@ def generate_calibration_table():
     print("="*100)
     
     # Проверка конкретных значений
-    print("\n" + "="*70)
-    print("ПРОВЕРКА КОНКРЕТНЫХ ЗНАЧЕНИЙ:")
-    print("="*70)
+    #print("\n" + "="*70)
+    #print("ПРОВЕРКА КОНКРЕТНЫХ ЗНАЧЕНИЙ:")
+    #print("="*70)
     
-    test_points = [
-        (1000, 0.0),
-        (2000, 0.6),
-        (3150, 0.9),
-        (4000, 1.2),
-        (5000, 0.9),
-        (6300, -0.1),
-        (8000, -1.6),
-        (10000, -4.5)
-    ]
+    #test_points = [
+    #    (1000, 0.0),
+    #    (2000, 0.6),
+    #    (3150, 0.9),
+    #    (4000, 1.2),
+    #    (5000, 0.9),
+    #    (6300, -0.1),
+    #    (8000, -1.6),
+    #    (10000, -4.5)
+    #]
     
-    for freq, expected in test_points:
-        actual = float(bs468.get_magnitude_db(freq))
-        error = actual - expected
+    #for freq, expected in test_points:
+    #    actual = float(bs468.get_magnitude_db(freq))
+    #    error = actual - expected
         
-        print(f"{freq:5} Гц: ожидалось {expected:5.1f} дБ, "
-              f"получено {actual:5.2f} дБ, ошибка {error:+.2f} дБ")
+    #    print(f"{freq:5} Гц: ожидалось {expected:5.1f} дБ, "
+    #          f"получено {actual:5.2f} дБ, ошибка {error:+.2f} дБ")
     
-    print("="*70)
+    #print("="*70)
     
     return bs468
 
